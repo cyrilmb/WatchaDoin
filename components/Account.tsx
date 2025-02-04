@@ -3,12 +3,15 @@ import { supabase } from '../lib/supabase'
 import { StyleSheet, View, Alert } from 'react-native'
 import { Button, Input } from '@rneui/themed'
 import { Session } from '@supabase/supabase-js'
+import Avatar from './Avatar'
+import { useNavigation } from '@react-navigation/native'
 
 export default function Account({ session }: { session: Session }) {
   const [loading, setLoading] = useState(true)
   const [username, setUsername] = useState('')
   const [website, setWebsite] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
+  const navigation = useNavigation()
 
   useEffect(() => {
     if (session) getProfile()
@@ -79,9 +82,20 @@ export default function Account({ session }: { session: Session }) {
 
   return (
     <View style={styles.container}>
+      <View>
+        <Avatar
+          size={200}
+          url={avatarUrl}
+          onUpload={(url: string) => {
+            setAvatarUrl(url)
+            updateProfile({ username, website, avatar_url: url })
+          }}
+        />
+      </View>
       <View style={[styles.verticallySpaced, styles.mt20]}>
         <Input label="Email" value={session?.user?.email} disabled />
       </View>
+
       <View style={styles.verticallySpaced}>
         <Input
           label="Username"
@@ -104,6 +118,14 @@ export default function Account({ session }: { session: Session }) {
             updateProfile({ username, website, avatar_url: avatarUrl })
           }
           disabled={loading}
+        />
+      </View>
+
+      <View style={styles.verticallySpaced}>
+        <Button
+          title="Go Back"
+          onPress={() => navigation.goBack()}
+          color="gray"
         />
       </View>
 
