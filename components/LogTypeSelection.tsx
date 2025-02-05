@@ -4,11 +4,7 @@ import { supabase } from '../lib/supabase'
 import { Alert, View, Text, Button, StyleSheet } from 'react-native'
 import { Session } from '@supabase/supabase-js'
 import { useNavigation, NavigationProp } from '@react-navigation/native'
-
-type RootStackParamList = {
-  LogTypeSelection: undefined
-  Account: undefined
-}
+import { RootStackParamList } from '../src/types' // Import the navigation types
 
 export default function LogTypeSelection({ session }: { session: Session }) {
   const [loading, setLoading] = useState(true)
@@ -48,12 +44,12 @@ export default function LogTypeSelection({ session }: { session: Session }) {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Whatta think yer doin?</Text>
+      <Text style={styles.title}>Whatta ya think yer doin?</Text>
 
       <View style={styles.buttonContainer}>
         <Button
           title="Activity"
-          onPress={() => console.log('Activity button pressed')}
+          onPress={() => navigation.navigate('ActivitySelection')}
         />
       </View>
 

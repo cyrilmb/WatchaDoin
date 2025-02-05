@@ -5,10 +5,13 @@ import { SafeAreaView } from 'react-native'
 import { Session } from '@supabase/supabase-js'
 import LogTypeSelection from './components/LogTypeSelection'
 import Account from './components/Account'
+import ActivitySelection from './components/ActivitySelection'
+import Timer from './components/Timer'
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
+import { RootStackParamList } from './src/types'
 
-const Stack = createStackNavigator()
+const Stack = createStackNavigator<RootStackParamList>()
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null)
@@ -29,7 +32,7 @@ export default function App() {
         <NavigationContainer>
           <Stack.Navigator>
             <Stack.Screen
-              name="LogSelection"
+              name="LogTypeSelection"
               options={{ title: 'Whatcha Up To?' }}
             >
               {() => <LogTypeSelection session={session} />}
@@ -37,6 +40,11 @@ export default function App() {
             <Stack.Screen name="Account" options={{ title: 'Account Info' }}>
               {() => <Account session={session} />}
             </Stack.Screen>
+            <Stack.Screen
+              name="ActivitySelection"
+              component={ActivitySelection}
+            />
+            <Stack.Screen name="Timer" component={Timer} />
           </Stack.Navigator>
         </NavigationContainer>
       ) : (
