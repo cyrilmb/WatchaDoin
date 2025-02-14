@@ -8,11 +8,16 @@ import {
   FlatList,
   StyleSheet,
 } from 'react-native'
+import { Session } from '@supabase/supabase-js'
 import { useNavigation, NavigationProp } from '@react-navigation/native'
 import { supabase } from '../lib/supabase'
 import { RootStackParamList } from '../src/types' // Import the navigation types
 
-export default function ActivitySelection() {
+interface ActivityProps {
+  session: Session
+}
+
+export default function ActivitySelection({ session }: ActivityProps) {
   const navigation = useNavigation<NavigationProp<RootStackParamList>>()
 
   const [activities, setActivities] = useState<string[]>([])
@@ -39,9 +44,34 @@ export default function ActivitySelection() {
     fetchActivities()
   }, [])
 
+  const fetchActivities = async () => {
+    const { data, error } = await supabase
+      .from('activities')
+      .select('activity_type')
+    if (error) {
+      console.error(error)
+    } else {
+      const uniqueActivities = [
+        ...new Set(data.map((item) => item.activity_type)),
+      ]
+      setActivities(uniqueActivities)
+    }
+  }
+
+  // Function to refresh activities
+  const refreshActivities = () => {
+    fetchActivities()
+  }
+
   // Handle navigation to Timer with selected activity
   const handleActivitySelect = (activity: string) => {
-    navigation.navigate('Timer', { activity })
+    if (!session) {
+      console.error('Session is missing')
+      return
+    }
+    console.log('navigate activity', activity)
+    navigation.navigate('Timer', { activity, session })
+    refreshActivities()
   }
 
   return (
@@ -67,7 +97,9 @@ export default function ActivitySelection() {
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={styles.activityButton}
-                onPress={() => handleActivitySelect(item)}
+                onPress={() => {
+                  handleActivitySelect(item)
+                }}
               >
                 <Text style={styles.activityText}>{item}</Text>
               </TouchableOpacity>
@@ -88,7 +120,9 @@ export default function ActivitySelection() {
         />
         <Button
           title="Start"
-          onPress={() => handleActivitySelect(newActivity)}
+          onPress={() => {
+            handleActivitySelect(newActivity)
+          }}
           disabled={!newActivity.trim()}
         />
       </View>

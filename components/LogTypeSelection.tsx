@@ -42,6 +42,9 @@ export default function LogTypeSelection({ session }: { session: Session }) {
 
   const navigation = useNavigation<NavigationProp<RootStackParamList>>()
 
+  const activity = ''
+  const timeElapsed = 0
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Whatta ya think yer doin?</Text>
@@ -49,14 +52,26 @@ export default function LogTypeSelection({ session }: { session: Session }) {
       <View style={styles.buttonContainer}>
         <Button
           title="Activity"
-          onPress={() => navigation.navigate('ActivitySelection')}
+          onPress={() => navigation.navigate('ActivitySelection', { session })}
         />
       </View>
 
       <View style={styles.buttonContainer}>
         <Button
           title="Drug"
-          onPress={() => console.log('Drug button pressed')}
+          onPress={() => navigation.navigate('DrugSelection', { session })}
+        />
+      </View>
+      <View style={styles.buttonContainer}>
+        <Button
+          title="Activity Log"
+          onPress={() =>
+            navigation.navigate('ReviewActivityLog', {
+              activity,
+              timeElapsed,
+            })
+          }
+          color="gray"
         />
       </View>
       {/* Bottom Button for Account Information */}

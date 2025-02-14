@@ -7,6 +7,9 @@ import LogTypeSelection from './components/LogTypeSelection'
 import Account from './components/Account'
 import ActivitySelection from './components/ActivitySelection'
 import Timer from './components/Timer'
+import ReviewActivityLog from './components/ReviewActivityLog'
+import DrugSelection from './components/DrugSelection'
+import DrugNotes from './components/DrugNotes'
 import { NavigationContainer } from '@react-navigation/native'
 import { createStackNavigator } from '@react-navigation/stack'
 import { RootStackParamList } from './src/types'
@@ -40,11 +43,16 @@ export default function App() {
             <Stack.Screen name="Account" options={{ title: 'Account Info' }}>
               {() => <Account session={session} />}
             </Stack.Screen>
-            <Stack.Screen
-              name="ActivitySelection"
-              component={ActivitySelection}
-            />
+            <Stack.Screen name="ActivitySelection">
+              {() => <ActivitySelection session={session} />}
+            </Stack.Screen>
             <Stack.Screen name="Timer" component={Timer} />
+            <Stack.Screen
+              name="ReviewActivityLog"
+              component={ReviewActivityLog}
+            />
+            <Stack.Screen name="DrugSelection" component={DrugSelection} />
+            <Stack.Screen name="DrugNotes" component={DrugNotes} />
           </Stack.Navigator>
         </NavigationContainer>
       ) : (
