@@ -17,9 +17,6 @@ export default function Timer({ route, navigation }: TimerProps) {
   const [isRunning, setIsRunning] = useState(false)
   const [startTime, setStartTime] = useState<number | null>(null)
   const [isPaused, setIsPaused] = useState(false)
-  const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null)
-
-  //   const navigation = useNavigation<NavigationProp<RootStackParamList>>()
 
   useEffect(() => {
     const loadStoredTimer = async () => {
@@ -33,8 +30,8 @@ export default function Timer({ route, navigation }: TimerProps) {
           Math.floor((now - Number(savedStartTime)) / 1000) +
           (Number(savedElapsedTime) || 0)
         setTimeElapsed(adjustedElapsed)
-        setStartTime(now)
-        startInterval()
+        setStartTime(Number(savedStartTime))
+        setIsRunning(true)
       } else if (savedElapsedTime) {
         setTimeElapsed(Number(savedElapsedTime))
       }
@@ -49,7 +46,10 @@ export default function Timer({ route, navigation }: TimerProps) {
       async (nextAppState) => {
         if (nextAppState === 'active' && startTime && isRunning) {
           const now = Date.now()
-          setTimeElapsed(Math.floor((now - startTime) / 1000))
+          const adjustedElapsed =
+            Math.floor((now - startTime) / 1000) +
+            (Number(await AsyncStorage.getItem('timerElapsed')) || 0)
+          setTimeElapsed(adjustedElapsed)
         }
       }
     )
@@ -57,17 +57,21 @@ export default function Timer({ route, navigation }: TimerProps) {
     return () => subscription.remove()
   }, [startTime, isRunning])
 
-  const startInterval = () => {
-    const id = setInterval(() => {
-      setTimeElapsed((prev) => prev + 1)
-    }, 1000)
-    setIntervalId(id)
-  }
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null
 
-  const stopInterval = () => {
-    if (intervalId) clearInterval(intervalId)
-    setIntervalId(null)
-  }
+    if (isRunning) {
+      interval = setInterval(() => {
+        setTimeElapsed((prev) => prev + 1)
+      }, 1000)
+    } else if (interval) {
+      clearInterval(interval)
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [isRunning])
 
   const startTimer = async () => {
     const now = Date.now()
@@ -76,21 +80,17 @@ export default function Timer({ route, navigation }: TimerProps) {
     setIsPaused(false)
     await AsyncStorage.setItem('timerStart', now.toString())
     await AsyncStorage.setItem('timerRunning', 'true')
-    startInterval()
   }
 
   const pauseTimer = async () => {
     if (startTime) {
-      stopInterval() // Stop interval before calculating elapsed time
       const now = Date.now()
-      const additionalElapsed = Math.floor((now - startTime) / 1000) // Time since last start
-      const totalElapsed = timeElapsed + additionalElapsed // Correct total time
-      setTimeElapsed(totalElapsed)
+      setTimeElapsed(timeElapsed)
       setIsRunning(false)
       setIsPaused(true)
       setStartTime(null)
 
-      await AsyncStorage.setItem('timerElapsed', totalElapsed.toString())
+      await AsyncStorage.setItem('timerElapsed', timeElapsed.toString())
       await AsyncStorage.setItem('timerRunning', 'false')
       await AsyncStorage.removeItem('timerStart')
     }
@@ -103,7 +103,6 @@ export default function Timer({ route, navigation }: TimerProps) {
     setIsPaused(false)
     await AsyncStorage.setItem('timerStart', now.toString())
     await AsyncStorage.setItem('timerRunning', 'true')
-    startInterval()
   }
 
   const stopTimer = async () => {
