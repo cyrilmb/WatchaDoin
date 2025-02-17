@@ -28,15 +28,24 @@ export default function ActivitySelection({ session }: ActivityProps) {
     const fetchActivities = async () => {
       const { data, error } = await supabase
         .from('activities')
-        .select('activity_type')
+        .select('activity_type, created_at')
+        .order('created_at', { ascending: false }) // Order by most recent first
 
       if (error) {
         console.error(error)
       } else {
-        // Remove duplicates and update state
-        const uniqueActivities = [
-          ...new Set(data.map((item) => item.activity_type)),
-        ]
+        // Create a map to store unique activities while maintaining order
+        const uniqueActivitiesMap = new Map()
+
+        data.forEach((item) => {
+          if (!uniqueActivitiesMap.has(item.activity_type)) {
+            uniqueActivitiesMap.set(item.activity_type, item)
+          }
+        })
+
+        // Convert map values to an array to keep order
+        const uniqueActivities = Array.from(uniqueActivitiesMap.keys())
+
         setActivities(uniqueActivities)
       }
     }

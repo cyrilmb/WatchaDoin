@@ -13,6 +13,20 @@ import { RouteProp, NavigationProp } from '@react-navigation/native'
 import { RootStackParamList } from '../src/types'
 import { supabase } from '../lib/supabase'
 
+// Utility function to format seconds as HH:MM:SS
+const formatTime = (seconds: number) => {
+  const hh = String(Math.floor(seconds / 3600)).padStart(2, '0')
+  const mm = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0')
+  const ss = String(seconds % 60).padStart(2, '0')
+  return `${hh}:${mm}:${ss}`
+}
+
+// Utility function to convert HH:MM:SS to total seconds
+const parseTime = (hhmmss: string) => {
+  const [hh, mm, ss] = hhmmss.split(':').map(Number)
+  return hh * 3600 + mm * 60 + ss
+}
+
 interface ReviewActivityLogProps {
   route: RouteProp<RootStackParamList, 'ReviewActivityLog'>
   navigation: NavigationProp<RootStackParamList>
@@ -27,23 +41,25 @@ export default function ReviewActivityLog({
   const [recentActivity, setRecentActivity] = useState({
     id: '',
     activity_type: activity,
-    time_elapsed: timeElapsed,
+    time_elapsed: formatTime(timeElapsed), // Ensure it's formatted
     created_at: '',
   })
+
   const [allActivities, setAllActivities] = useState<
     {
       id: string
       activity_type: string
-      time_elapsed: number
+      time_elapsed: string // Keep it as HH:MM:SS
       created_at: string
     }[]
   >([])
-  const [editMode, setEditMode] = useState<{ [key: string]: boolean }>({}) // Tracks edit mode per activity
+
+  const [editMode, setEditMode] = useState<{ [key: string]: boolean }>({})
   const [editedActivities, setEditedActivities] = useState<{
     [key: string]: { activity_type: string; time_elapsed: string }
-  }>({}) // Stores edits
+  }>({})
 
-  // Fetch recent activity and all past activities
+  // Fetch activities from Supabase
   useEffect(() => {
     const fetchActivities = async () => {
       const { data, error } = await supabase
@@ -54,19 +70,24 @@ export default function ReviewActivityLog({
       if (error) {
         console.error('Error fetching activities:', error)
       } else if (data.length > 0) {
-        setRecentActivity(data[0])
-        setAllActivities(data)
+        // Ensure time_elapsed is in HH:MM:SS
+        const formattedData = data.map((item) => ({
+          ...item,
+          time_elapsed: item.time_elapsed, // Supabase should already store it as HH:MM:SS
+        }))
+        setRecentActivity(formattedData[0])
+        setAllActivities(formattedData)
       }
     }
 
     fetchActivities()
   }, [])
 
-  // Toggle edit mode for an activity
+  // Toggle edit mode
   const toggleEditMode = (
     id: string,
     currentActivity: string,
-    currentTime: number
+    currentTime: string
   ) => {
     setEditMode((prev) => ({
       ...prev,
@@ -76,7 +97,7 @@ export default function ReviewActivityLog({
       ...prev,
       [id]: {
         activity_type: currentActivity,
-        time_elapsed: currentTime.toString(),
+        time_elapsed: currentTime, // Keep HH:MM:SS format
       },
     }))
   }
@@ -89,7 +110,7 @@ export default function ReviewActivityLog({
       .from('activities')
       .update({
         activity_type,
-        time_elapsed: parseInt(time_elapsed),
+        time_elapsed, // Save as HH:MM:SS
       })
       .eq('id', id)
 
@@ -98,9 +119,7 @@ export default function ReviewActivityLog({
     } else {
       setAllActivities((prev) =>
         prev.map((item) =>
-          item.id === id
-            ? { ...item, activity_type, time_elapsed: parseInt(time_elapsed) }
-            : item
+          item.id === id ? { ...item, activity_type, time_elapsed } : item
         )
       )
       setEditMode((prev) => ({
@@ -111,7 +130,7 @@ export default function ReviewActivityLog({
     }
   }
 
-  // Show confirmation before deleting
+  // Confirm delete
   const confirmDelete = (id: string) => {
     Alert.alert(
       'Delete Activity',
@@ -139,7 +158,7 @@ export default function ReviewActivityLog({
         setRecentActivity({
           id: '',
           activity_type: '',
-          time_elapsed: 0,
+          time_elapsed: '00:00:00',
           created_at: '',
         })
       }
@@ -149,36 +168,6 @@ export default function ReviewActivityLog({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Recent Activity</Text>
-      <Text>{recentActivity.created_at.split('T')[0]}</Text>
-      <TextInput
-        style={styles.input}
-        value={recentActivity.activity_type}
-        onChangeText={(text) =>
-          setRecentActivity((prev) => ({ ...prev, activity_type: text }))
-        }
-      />
-      <TextInput
-        style={styles.input}
-        value={recentActivity.time_elapsed.toString()}
-        onChangeText={(text) =>
-          setRecentActivity((prev) => ({
-            ...prev,
-            time_elapsed: parseInt(text),
-          }))
-        }
-        keyboardType="numeric"
-      />
-      <Button
-        title="Update Activity"
-        onPress={() => handleUpdate(recentActivity.id)}
-      />
-      <Button
-        title="Delete Activity"
-        onPress={() => confirmDelete(recentActivity.id)}
-        color="red"
-      />
-
       <Text style={styles.header}>Past Activities</Text>
       <FlatList
         data={allActivities}
@@ -204,8 +193,7 @@ export default function ReviewActivityLog({
                 <TextInput
                   style={styles.input}
                   value={
-                    editedActivities[item.id]?.time_elapsed ||
-                    item.time_elapsed.toString()
+                    editedActivities[item.id]?.time_elapsed || item.time_elapsed
                   }
                   onChangeText={(text) =>
                     setEditedActivities((prev) => ({
@@ -213,7 +201,6 @@ export default function ReviewActivityLog({
                       [item.id]: { ...prev[item.id], time_elapsed: text },
                     }))
                   }
-                  keyboardType="numeric"
                 />
                 <Button title="Save" onPress={() => handleUpdate(item.id)} />
                 <Button
@@ -230,7 +217,7 @@ export default function ReviewActivityLog({
             ) : (
               <>
                 <Text>
-                  {item.activity_type} - {item.time_elapsed}s
+                  {item.activity_type} - {item.time_elapsed}
                 </Text>
                 <TouchableOpacity
                   onPress={() =>
